@@ -256,6 +256,13 @@ static ngx_command_t  ngx_stream_ssl_commands[] = {
       0,
       NULL },
 
+    { ngx_string("ssl_early_data"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_ssl_srv_conf_t, early_data),
+      NULL },
+
 #if (NGX_HAVE_NTLS)
     { ngx_string("ssl_ntls"),
       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_FLAG,
@@ -360,6 +367,9 @@ static ngx_stream_variable_t  ngx_stream_ssl_vars[] = {
 
     { ngx_string("ssl_client_v_remain"), NULL, ngx_stream_ssl_variable,
       (uintptr_t) ngx_ssl_get_client_v_remain, NGX_STREAM_VAR_CHANGEABLE, 0 },
+
+    { ngx_string("ssl_early_data"), NULL, ngx_stream_ssl_variable,
+      (uintptr_t) ngx_ssl_get_early_data, NGX_STREAM_VAR_CHANGEABLE, 0 },
 
       ngx_stream_null_variable
 };
@@ -862,6 +872,7 @@ ngx_stream_ssl_create_srv_conf(ngx_conf_t *cf)
     sscf->session_timeout = NGX_CONF_UNSET;
     sscf->session_tickets = NGX_CONF_UNSET;
     sscf->session_ticket_keys = NGX_CONF_UNSET_PTR;
+    sscf->early_data = NGX_CONF_UNSET;
 #if (NGX_HAVE_NTLS)
     sscf->ntls = NGX_CONF_UNSET;
 #endif
@@ -888,6 +899,8 @@ ngx_stream_ssl_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
                          prev->prefer_server_ciphers, 0);
 
     ngx_conf_merge_value(conf->reject_handshake, prev->reject_handshake, 0);
+
+    ngx_conf_merge_value(conf->early_data, prev->early_data, 0);
 
     ngx_conf_merge_bitmask_value(conf->protocols, prev->protocols,
                          (NGX_CONF_BITMASK_SET
@@ -1077,6 +1090,10 @@ ngx_stream_ssl_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
     if (ngx_ssl_conf_commands(cf, &conf->ssl, conf->conf_commands) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (ngx_ssl_early_data(cf, &conf->ssl, conf->early_data) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 

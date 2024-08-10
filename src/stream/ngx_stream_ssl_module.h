@@ -58,6 +58,8 @@ typedef struct {
     u_char          *file;
     ngx_uint_t       line;
 
+    ngx_flag_t       early_data;
+
 #if (NGX_HAVE_NTLS)
     ngx_flag_t       ntls;
 #endif
