@@ -5,7 +5,7 @@
 <change_log title="nginx">
 
 
-<changes ver="1.27.0" date="2024-05-29">
+<changes ver="1.26.1" date="2024-05-29">
 
 <change type="security">
 <para lang="ru">
@@ -51,12 +51,12 @@ if "gzip", "gunzip", "ssi", "sub_filter", or "grpc_pass" directives are used.
 <change type="bugfix">
 <para lang="ru">
 nginx не собирался gcc 14,
-если использовался параметр --with-atomic.<br/>
+если использовался параметр --with-libatomic.<br/>
 Спасибо Edgar Bonet.
 </para>
 <para lang="en">
 nginx could not be built by gcc 14
-if the --with-atomic option was used.<br/>
+if the --with-libatomic option was used.<br/>
 Thanks to Edgar Bonet.
 </para>
 </change>
@@ -67,6 +67,20 @@ Thanks to Edgar Bonet.
 </para>
 <para lang="en">
 Bugfixes in HTTP/3.
+</para>
+</change>
+
+</changes>
+
+
+<changes ver="1.26.0" date="2024-04-23">
+
+<change>
+<para lang="ru">
+Стабильная ветка 1.26.x.
+</para>
+<para lang="en">
+1.26.x stable branch.
 </para>
 </change>
 

@@ -33,7 +33,7 @@ Features
 --------
 
 On top of all the capabilities of
-`nginx 1.25.4 <https://nginx.org/en/CHANGES>`_,
+`nginx 1.26.1 <http://nginx.org/en/CHANGES-1.26>`_,
 **Angie** adds a number of its own advantages, including these:
 
 - Supporting `HTTP/3
