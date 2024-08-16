@@ -756,8 +756,15 @@ ngx_quic_keys_discard(ngx_quic_keys_t *keys,
     ngx_quic_crypto_hp_cleanup(client);
     ngx_quic_crypto_hp_cleanup(server);
 
-    ngx_explicit_memzero(client->secret.data, client->secret.len);
-    ngx_explicit_memzero(server->secret.data, server->secret.len);
+    if (client->secret.len) {
+        ngx_explicit_memzero(client->secret.data, client->secret.len);
+        client->secret.len = 0;
+    }
+
+    if (server->secret.len) {
+        ngx_explicit_memzero(server->secret.data, server->secret.len);
+        server->secret.len = 0;
+    }
 }
 
 
