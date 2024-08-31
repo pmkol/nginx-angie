@@ -60,6 +60,10 @@ typedef struct {
 
     ngx_flag_t       early_data;
 
+    ngx_uint_t       ocsp;
+    ngx_str_t        ocsp_responder;
+    ngx_shm_zone_t  *ocsp_cache_zone;
+
 #if (NGX_HAVE_NTLS)
     ngx_flag_t       ntls;
 #endif
