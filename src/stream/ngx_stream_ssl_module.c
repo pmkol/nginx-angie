@@ -266,6 +266,34 @@ static ngx_command_t  ngx_stream_ssl_commands[] = {
       0,
       NULL },
 
+    { ngx_string("ssl_stapling"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_ssl_srv_conf_t, stapling),
+      NULL },
+
+    { ngx_string("ssl_stapling_file"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_ssl_srv_conf_t, stapling_file),
+      NULL },
+
+    { ngx_string("ssl_stapling_responder"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_ssl_srv_conf_t, stapling_responder),
+      NULL },
+
+    { ngx_string("ssl_stapling_verify"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_ssl_srv_conf_t, stapling_verify),
+      NULL },
+
     { ngx_string("ssl_conf_command"),
       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE2,
       ngx_conf_set_keyval_slot,
@@ -889,6 +917,8 @@ ngx_stream_ssl_create_srv_conf(ngx_conf_t *cf)
      *     sscf->ciphers = { 0, NULL };
      *     sscf->shm_zone = NULL;
      *     sscf->ocsp_responder = { 0, NULL };
+     *     sscf->stapling_file = { 0, NULL };
+     *     sscf->stapling_responder = { 0, NULL };
      */
 
     sscf->handshake_timeout = NGX_CONF_UNSET_MSEC;
@@ -904,9 +934,11 @@ ngx_stream_ssl_create_srv_conf(ngx_conf_t *cf)
     sscf->session_timeout = NGX_CONF_UNSET;
     sscf->session_tickets = NGX_CONF_UNSET;
     sscf->session_ticket_keys = NGX_CONF_UNSET_PTR;
+    sscf->early_data = NGX_CONF_UNSET;
     sscf->ocsp = NGX_CONF_UNSET_UINT;
     sscf->ocsp_cache_zone = NGX_CONF_UNSET_PTR;
-    sscf->early_data = NGX_CONF_UNSET;
+    sscf->stapling = NGX_CONF_UNSET;
+    sscf->stapling_verify = NGX_CONF_UNSET;
 #if (NGX_HAVE_NTLS)
     sscf->ntls = NGX_CONF_UNSET;
 #endif
@@ -970,6 +1002,12 @@ ngx_stream_ssl_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->ocsp_responder, prev->ocsp_responder, "");
     ngx_conf_merge_ptr_value(conf->ocsp_cache_zone,
                          prev->ocsp_cache_zone, NULL);
+
+    ngx_conf_merge_value(conf->stapling, prev->stapling, 0);
+    ngx_conf_merge_value(conf->stapling_verify, prev->stapling_verify, 0);
+    ngx_conf_merge_str_value(conf->stapling_file, prev->stapling_file, "");
+    ngx_conf_merge_str_value(conf->stapling_responder,
+                         prev->stapling_responder, "");
 
 #if (NGX_HAVE_NTLS)
     ngx_conf_merge_value(conf->ntls, prev->ntls, 0);
@@ -1073,18 +1111,18 @@ ngx_stream_ssl_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         {
             return NGX_CONF_ERROR;
         }
+    }
 
-        if (ngx_ssl_trusted_certificate(cf, &conf->ssl,
-                                        &conf->trusted_certificate,
-                                        conf->verify_depth)
-            != NGX_OK)
-        {
-            return NGX_CONF_ERROR;
-        }
+    if (ngx_ssl_trusted_certificate(cf, &conf->ssl,
+                                    &conf->trusted_certificate,
+                                    conf->verify_depth)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
 
-        if (ngx_ssl_crl(cf, &conf->ssl, &conf->crl) != NGX_OK) {
-            return NGX_CONF_ERROR;
-        }
+    if (ngx_ssl_crl(cf, &conf->ssl, &conf->crl) != NGX_OK) {
+        return NGX_CONF_ERROR;
     }
 
     if (conf->ocsp) {
@@ -1143,6 +1181,17 @@ ngx_stream_ssl_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         != NGX_OK)
     {
         return NGX_CONF_ERROR;
+    }
+
+    if (conf->stapling) {
+
+        if (ngx_ssl_stapling(cf, &conf->ssl, &conf->stapling_file,
+                             &conf->stapling_responder, conf->stapling_verify)
+            != NGX_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
+
     }
 
     if (ngx_ssl_conf_commands(cf, &conf->ssl, conf->conf_commands) != NGX_OK) {
@@ -1551,6 +1600,15 @@ ngx_stream_ssl_init(ngx_conf_t *cf)
         }
 
         cscf = cscfp[s]->ctx->srv_conf[ngx_stream_core_module.ctx_index];
+
+        if (sscf->stapling) {
+            if (ngx_ssl_stapling_resolver(cf, &sscf->ssl, cscf->resolver,
+                                          cscf->resolver_timeout)
+                != NGX_OK)
+            {
+                return NGX_ERROR;
+            }
+        }
 
         if (sscf->ocsp) {
             if (ngx_ssl_ocsp_resolver(cf, &sscf->ssl, cscf->resolver,

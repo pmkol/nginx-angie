@@ -64,6 +64,11 @@ typedef struct {
     ngx_str_t        ocsp_responder;
     ngx_shm_zone_t  *ocsp_cache_zone;
 
+    ngx_flag_t       stapling;
+    ngx_flag_t       stapling_verify;
+    ngx_str_t        stapling_file;
+    ngx_str_t        stapling_responder;
+
 #if (NGX_HAVE_NTLS)
     ngx_flag_t       ntls;
 #endif
