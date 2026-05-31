@@ -11,7 +11,7 @@
 
 
 #define nginx_version      1028003
-#define NGINX_VERSION      "1.28.3-2"
+#define NGINX_VERSION      "1.28.3-3"
 #define NGINX_VER          "nginx/" NGINX_VERSION
 
 #define NGINX_VER_BUILD    NGINX_VER
